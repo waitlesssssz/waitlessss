@@ -198,7 +198,8 @@ export default async (req) => {
           const text =
             "🔔 Новый заказ!\nСтол: " + order.table +
             "\n\n" + order.items +
-            "\n\nИтого: " + order.total + "₽";
+            "\n\nИтого: " + order.total + "₸";
+
 
           await fetch(
             "https://api.telegram.org/bot" + botToken + "/sendMessage",
