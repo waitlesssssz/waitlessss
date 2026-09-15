@@ -196,8 +196,8 @@ let reply =
         const chatId = process.env.TELEGRAM_CHAT_ID;
 
         if (botToken && chatId) {
-          const text = 🔔 Новый заказ!\nСтол: ${order.table}\n\n${order.items}\n\nИтого: ${order.total}₽;
-          await fetch(https://api.telegram.org/bot${botToken}/sendMessage, {
+          const text = 🔔 Новый заказ!\nСтол: ${order.table}\n\n${order.items}\n\nИтого: ${order.total}₽
+await await fetch(https://api.telegram.org/bot${botToken}/sendMe
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ chat_id: chatId, text }),
