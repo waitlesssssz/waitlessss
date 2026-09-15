@@ -152,7 +152,6 @@ export default async (req) => {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Convert our simple {role, text} history into Gemini's format
   const contents = messages.map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.text }],
@@ -181,11 +180,11 @@ export default async (req) => {
         { status: response.status },
       );
     }
-let reply =
+
+    let reply =
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
       "Извините, не получилось сформировать ответ. Попробуйте ещё раз.";
 
-    // Если Gemini сигнализировал, что гость подтвердил заказ
     const orderMatch = reply.match(/ORDER_JSON:\s*(\{[\s\S]*\})/);
     if (orderMatch) {
       reply = reply.slice(0, orderMatch.index).trim();
@@ -196,12 +195,19 @@ let reply =
         const chatId = process.env.TELEGRAM_CHAT_ID;
 
         if (botToken && chatId) {
-          const text = 🔔 Новый заказ!\nСтол: ${order.table}\n\n${order.items}\n\nИтого: ${order.total}₽
-await await fetch(https://api.telegram.org/bot${botToken}/sendMe
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chat_id: chatId, text }),
-          });
+          const text =
+            "🔔 Новый заказ!\nСтол: " + order.table +
+            "\n\n" + order.items +
+            "\n\nИтого: " + order.total + "₽";
+
+          await fetch(
+            "https://api.telegram.org/bot" + botToken + "/sendMessage",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: chatId, text: text }),
+            }
+          );
         }
       } catch (e) {
         console.error("Failed to parse/send order:", e);
@@ -209,7 +215,6 @@ await await fetch(https://api.telegram.org/bot${botToken}/sendMe
     }
 
     return Response.json({ reply });
-    
   } catch (err) {
     return Response.json({ error: "Server error: " + err.message }, { status: 500 });
   }
