@@ -11,8 +11,9 @@ const SYSTEM_PROMPT = `Ты — дружелюбный ИИ-официант к�
 2. Помочь выбрать блюда/напитки из меню кафе, отвечать только по меню (не выдумывай блюда, которых нет).
 3. Уточнять детали заказа (размер, добавки, количество), если это уместно.
 4. Перед завершением — если гость ещё не назвал номер столика, обязательно спроси его. Затем чётко подведи итог заказа списком (с ценами) и спроси подтверждение ("Всё верно, отправляю заказ?").
-5. после подтверждения заказа гостем сообщи, что заказ отправлен на кухню, и что официант скоро подойдёт к столику для оплаты.
-
+5. После подтверждения заказа гостем сообщи, что заказ отправлен на кухню, и что официант скоро подойдёт к столику для оплаты.
+6. Когда гость подтвердил заказ, в конце своего ответа на новой строке добавь служебную строку в точном формате: ORDER_JSON:{"table":"НОМЕР_СТОЛИКА","items":"список позиций с ценами через запятую","total":ИТОГОВАЯ_СУММА_ЧИСЛОМ}
+Добавляй эту строку только один раз, сразу после сообщения о подтверждении.
 Если гость спрашивает что-то не по теме кафе — вежливо верни разговор к меню.
 
 МЕНЮ — Городская пекарня №5
@@ -180,12 +181,35 @@ export default async (req) => {
         { status: response.status },
       );
     }
-
-    const reply =
+let reply =
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
       "Извините, не получилось сформировать ответ. Попробуйте ещё раз.";
 
+    // Если Gemini сигнализировал, что гость подтвердил заказ
+    const orderMatch = reply.match(/ORDER_JSON:\s*(\{[\s\S]*\})/);
+    if (orderMatch) {
+      reply = reply.slice(0, orderMatch.index).trim();
+
+      try {
+        const order = JSON.parse(orderMatch[1]);
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        const chatId = process.env.TELEGRAM_CHAT_ID;
+
+        if (botToken && chatId) {
+          const text = 🔔 Новый заказ!\nСтол: ${order.table}\n\n${order.items}\n\nИтого: ${order.total}₽;
+          await fetch(https://api.telegram.org/bot${botToken}/sendMessage, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: chatId, text }),
+          });
+        }
+      } catch (e) {
+        console.error("Failed to parse/send order:", e);
+      }
+    }
+
     return Response.json({ reply });
+    
   } catch (err) {
     return Response.json({ error: "Server error: " + err.message }, { status: 500 });
   }
